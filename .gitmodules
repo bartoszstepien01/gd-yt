@@ -1,0 +1,3 @@
+[submodule "include/gd"]
+	path = include/gd
+	url = https://github.com/HJfod/gd.h
