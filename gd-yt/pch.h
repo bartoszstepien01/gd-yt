@@ -17,4 +17,6 @@
 
 #include <MinHook.h>
 
+#include "Base64.h"
+
 #endif //PCH_H
