@@ -1,3 +1,6 @@
 [submodule "include/gd"]
 	path = include/gd
 	url = https://github.com/HJfod/gd.h
+[submodule "include/json"]
+	path = include/json
+	url = https://github.com/nlohmann/json

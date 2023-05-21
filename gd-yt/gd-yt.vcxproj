@@ -103,12 +103,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;GDYT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;GDYT_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\cocos2dx\platform\third_party\win32\libwebp;$(SolutionDir)include\cocos2dx\platform\third_party\win32\pthread;$(SolutionDir)include\cocos2dx\platform\third_party\win32\OGLES;$(SolutionDir)include\cocos2dx\kazmath\include;$(SolutionDir)include\cocos2dx\platform\third_party\win32\libtiff;$(SolutionDir)include\cocos2dx\platform\third_party\win32\libpng;$(SolutionDir)include\cocos2dx\platform\third_party\win32\libjpeg;$(SolutionDir)include\cocos2dx\platform\third_party\win32\zlib;$(SolutionDir)include\cocos2dx\platform\third_party\win32\iconv;$(SolutionDir)include\cocos2dx\platform\win32;$(SolutionDir)include\cocos2dx\;$(SolutionDir)include\cocos2dx\include;$(SolutionDir)include\gd\include;$(SolutionDir)include\gd;$(SolutionDir)include\extensions;$(SolutionDir)include\minhook\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\cocos2dx\platform\third_party\win32\libwebp;$(SolutionDir)include\cocos2dx\platform\third_party\win32\pthread;$(SolutionDir)include\cocos2dx\platform\third_party\win32\OGLES;$(SolutionDir)include\cocos2dx\kazmath\include;$(SolutionDir)include\cocos2dx\platform\third_party\win32\libtiff;$(SolutionDir)include\cocos2dx\platform\third_party\win32\libpng;$(SolutionDir)include\cocos2dx\platform\third_party\win32\libjpeg;$(SolutionDir)include\cocos2dx\platform\third_party\win32\zlib;$(SolutionDir)include\cocos2dx\platform\third_party\win32\iconv;$(SolutionDir)include\cocos2dx\platform\win32;$(SolutionDir)include\cocos2dx\;$(SolutionDir)include\cocos2dx\include;$(SolutionDir)include\gd\include;$(SolutionDir)include\gd;$(SolutionDir)include\extensions;$(SolutionDir)include\minhook\include;$(SolutionDir)include\json\single_include\nlohmann</AdditionalIncludeDirectories>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>

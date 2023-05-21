@@ -17,6 +17,8 @@
 
 #include <MinHook.h>
 
+#include <json.hpp>
+
 #include "Base64.h"
 
 #endif //PCH_H
