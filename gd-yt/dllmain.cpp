@@ -157,6 +157,9 @@ void __fastcall LevelCell_updateBGColor(gd::LevelCell* This, void*, unsigned int
 class SampleClass {
 public:
     static gd::CCTextInputNode* input;
+    static gd::CCMenuItemSpriteExtra* ytSearchButton;
+    static gd::CCMenuItemSpriteExtra* ngSearchButton;
+    static gd::CustomSongWidget* songWidget;
 
     void callback(gd::CCMenuItemToggler* sender) {
         //gd::FLAlertLayer::create(nullptr, "Attempt Count", "OK", nullptr, !sender->isOn() ? "on" : "off")->show();
@@ -165,24 +168,74 @@ public:
         if (sender->isOn()) {
             input->setAllowedChars("0123456789");
             input->setMaxLabelLength(999);
+            ytSearchButton->setVisible(false);
+            ngSearchButton->setVisible(true);
         }
         else {
             input->setAllowedChars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
             input->setMaxLabelLength(11);
+            ytSearchButton->setVisible(true);
+            ngSearchButton->setVisible(false);
         }
     }
 
+    void buttonCallback(gd::CCMenuItemSpriteExtra* sender) {
+        //gd::FLAlertLayer::create(nullptr, "Test", "OK", nullptr, "Hello, world!")->show();
+        std::string youtubeID = input->getString();
+        if (!cache.contains(youtubeID)) {
+            // TODO: Sanitize input
+            std::string command = "gd-yt\\yt-dlp -J " + youtubeID + " --no-warnings";
+            std::string output;
+            // TODO: Move to another thread and handle errors
+            int result = runCmd(command.c_str(), output);
+
+            json outputJSON = json::parse(output);
+
+            cache[youtubeID] = {
+                { "id", youtubeID },
+                { "name", outputJSON["title"] },
+                { "artistID", outputJSON["uploader_id"] },
+                { "artist", outputJSON["uploader"] },
+                { "url", outputJSON["webpage_url"]}
+            };
+
+            cacheFile.open("gd-yt/cache.json", std::ios::out);
+            cacheFile << std::setw(4) << cache;
+            cacheFile.close();
+        }
+
+        // memory leak ?
+        gd::SongInfoObject* info = new gd::SongInfoObject;
+        info->m_nSongID = -1;
+        info->m_sSongName = cache[youtubeID]["name"];
+        info->m_sArtistName = cache[youtubeID]["artist"];
+        info->m_sSongLink = cache[youtubeID]["url"];
+        info->m_nArtistID = -1;
+        info->m_fFileSize = 2137;
+        info->m_bIsVerified = true;
+        info->m_nSongPriority = -1;
+
+        songWidget->updateSongObject(info);
+    }
 };
 
 gd::CCTextInputNode* SampleClass::input;
+gd::CCMenuItemSpriteExtra* SampleClass::ytSearchButton;
+gd::CCMenuItemSpriteExtra* SampleClass::ngSearchButton;
+gd::CustomSongWidget* SampleClass::songWidget;
 
 bool __fastcall CustomSongLayer_Init(gd::CustomSongLayer* This, void*, gd::LevelSettingsObject* obj) {
     using namespace cocos2d;
     if (!functionCopy2(This, 0, obj)) return false;
 
+    SampleClass::songWidget = This->m_songWidget;
     SampleClass::input = This->m_songIDInput;
 
-    //gd::CCMenuItemSpriteExtra* button = gd::CCMenuItemSpriteExtra::create(gd::ButtonSprite::create("Apply", 0, false, "goldFont.fnt", "GJ_button_01.png", 0.0f, 1.0f), This, menu_selector(DaButtonCallback::callback));
+    gd::CCMenuItemSpriteExtra* button = gd::CCMenuItemSpriteExtra::create(gd::ButtonSprite::create("Search", 0, false, "goldFont.fnt", "GJ_button_04.png", 35, 0.529f), This, menu_selector(SampleClass::buttonCallback));
+    button->setPosition(323, -155);
+    button->setVisible(false);
+
+    SampleClass::ytSearchButton = button;
 
     gd::CCMenuItemToggler* toggle = gd::CCMenuItemToggler::createWithStandardSprites(This, menu_selector(SampleClass::callback));
     toggle->setPosition(40, -155);
@@ -192,9 +245,22 @@ bool __fastcall CustomSongLayer_Init(gd::CustomSongLayer* This, void*, gd::Level
     for (int i = 0; i < layer->getChildrenCount(); i++) {
         CCNode* node = reinterpret_cast<CCNode*>(layer->getChildren()->objectAtIndex(i));
 
-        if (node->getZOrder() == 10) {
-            node->addChild(toggle);
-        }
+        if (node->getZOrder() != 10) continue;
+
+        CCObject* obj;
+        CCARRAY_FOREACH(node->getChildren(), obj) {
+            CCLayer* layer = reinterpret_cast<CCLayer*>(obj);
+
+            if (layer->getPositionX() == 323 && layer->getPositionY() == -155) {
+                SampleClass::ngSearchButton = reinterpret_cast<gd::CCMenuItemSpriteExtra*>(layer);
+                break;
+            }
+        };
+
+        node->addChild(toggle);
+        node->addChild(button);
+
+        break;
     }
 
     //This->m_songIDInput->setAllowedChars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
