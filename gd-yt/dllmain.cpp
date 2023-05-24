@@ -3,6 +3,7 @@
 #include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <filesystem>
 
 using namespace cocos2d;
 
@@ -156,6 +157,7 @@ void __fastcall LevelCell_updateBGColor(gd::LevelCell* This, void*, unsigned int
 
 class SampleClass {
 public:
+    static gd::GJGameLevel* level;
     static gd::CCTextInputNode* input;
     static gd::CCMenuItemSpriteExtra* ytSearchButton;
     static gd::CCMenuItemSpriteExtra* ngSearchButton;
@@ -177,7 +179,7 @@ public:
             ytSearchButton->setVisible(true);
             ngSearchButton->setVisible(false);
         }
-    }
+    }   
 
     void buttonCallback(gd::CCMenuItemSpriteExtra* sender) {
         //gd::FLAlertLayer::create(nullptr, "Test", "OK", nullptr, "Hello, world!")->show();
@@ -210,15 +212,58 @@ public:
         info->m_sSongName = cache[youtubeID]["name"];
         info->m_sArtistName = cache[youtubeID]["artist"];
         info->m_sSongLink = cache[youtubeID]["url"];
+        info->m_sYouTubeChannelURL = youtubeID;
         info->m_nArtistID = -1;
-        info->m_fFileSize = 2137;
+        info->m_fFileSize = 21.37;
         info->m_bIsVerified = true;
         info->m_nSongPriority = -1;
 
         songWidget->updateSongObject(info);
+
+        cocos2d::CCObject* obj;
+        cocos2d::CCMenu* menu = NULL;
+
+        using namespace cocos2d;
+        CCARRAY_FOREACH(songWidget->getChildren(), obj) {
+            debugFile << reinterpret_cast<CCNode*>(obj)->getChildrenCount() << '\n';
+            if (reinterpret_cast<CCNode*>(obj)->getChildrenCount() != 6) continue;
+
+            menu = reinterpret_cast<CCMenu*>(obj);
+            break;
+        }
+
+        CCARRAY_FOREACH(menu->getChildren(), obj) {
+            reinterpret_cast<CCNode*>(obj)->setVisible(false);
+        }
+
+        CCSprite* sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
+        gd::CCMenuItemSpriteExtra* downloadButton = gd::CCMenuItemSpriteExtra::create(sprite, songWidget, menu_selector(SampleClass::downloadCallback));
+        downloadButton->setPosition(-157, -180);
+
+        CCSprite* sprite2 = CCSprite::createWithSpriteFrameName("GJ_selectSongBtn_001.png");
+        gd::CCMenuItemSpriteExtra* useButton = gd::CCMenuItemSpriteExtra::create(sprite2, songWidget, menu_selector(SampleClass::useCallback));
+        useButton->setPosition(-157, -180);
+
+        if (std::filesystem::exists("gd-yt/downloads/" + youtubeID + ".mp3")) downloadButton->setVisible(false);
+        else useButton->setVisible(false);
+
+        menu->addChild(downloadButton);
+        menu->addChild(useButton);
+    }
+
+    void downloadCallback(gd::CCMenuItemSpriteExtra* button) {
+        //gd::FLAlertLayer::create(nullptr, "Test", "OK", nullptr, )->show();
+        std::string command = "gd-yt\\yt-dlp -x --audio-format mp3 " + songWidget->m_songInfo->m_sSongLink + " -o \"gd-yt/downloads/%(id)s.%(ext)s\"";
+        std::string output;
+        int ret = runCmd(command.c_str(), output);
+    }
+
+    void useCallback(gd::CCMenuItemSpriteExtra* button) {
+        level->m_sLevelDesc = macaron::Base64::Encode("$" + songWidget->m_songInfo->m_sYouTubeChannelURL + "$");
     }
 };
 
+gd::GJGameLevel* SampleClass::level;
 gd::CCTextInputNode* SampleClass::input;
 gd::CCMenuItemSpriteExtra* SampleClass::ytSearchButton;
 gd::CCMenuItemSpriteExtra* SampleClass::ngSearchButton;
@@ -227,6 +272,8 @@ gd::CustomSongWidget* SampleClass::songWidget;
 bool __fastcall CustomSongLayer_Init(gd::CustomSongLayer* This, void*, gd::LevelSettingsObject* obj) {
     using namespace cocos2d;
     if (!functionCopy2(This, 0, obj)) return false;
+
+    SampleClass::level = This->m_levelSettings->m_pLevel;
 
     SampleClass::songWidget = This->m_songWidget;
     SampleClass::input = This->m_songIDInput;
