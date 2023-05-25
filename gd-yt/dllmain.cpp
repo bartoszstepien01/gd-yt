@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <filesystem>
+#include <string>
 
 using namespace cocos2d;
 
@@ -19,6 +20,12 @@ UpdateBGColor functionCopy;
 
 typedef bool(__fastcall* CustomSongLayerInit)(gd::CustomSongLayer*, void*, gd::LevelSettingsObject*);
 CustomSongLayerInit functionCopy2;
+
+typedef bool(__fastcall* EditLevelLayerInit)(gd::EditLevelLayer*, void*, gd::GJGameLevel*);
+EditLevelLayerInit functionCopy5;
+
+typedef bool(__fastcall* LevelSettingsLayerInit)(gd::LevelSettingsLayer*, void*, gd::LevelSettingsObject*, gd::LevelEditorLayer*);
+LevelSettingsLayerInit functionCopy3;
 
 std::set<std::pair<int, int>> songNamePositions {
     {52, 33}, {98, 20}, {86, 20}, {74, 20}, {88, 20}, {103, 20},
@@ -153,8 +160,12 @@ void __fastcall LevelCell_updateBGColor(gd::LevelCell* This, void*, unsigned int
         std::pair<int, int> position = { bmFont->getPositionX(), bmFont->getPositionY() };
         if (songNamePositions.count(position) > 0) bmFont->setString(title.c_str());
     }
+
+    //std::filesystem::rename("Resources/" + std::to_string(This->m_pLevel->m_nSongID) + ".mp3", "Resources/temp.mp3");
+    //std::filesystem::copy("gd-yt/downloads/" + youtubeID + ".mp3", "Resources/" + std::to_string(This->m_pLevel->m_nSongID) + ".mp3");
 }
 
+//TODO: Control CustomSongWidget of LevelSettingsLayer in here
 class SampleClass {
 public:
     static gd::GJGameLevel* level;
@@ -162,6 +173,11 @@ public:
     static gd::CCMenuItemSpriteExtra* ytSearchButton;
     static gd::CCMenuItemSpriteExtra* ngSearchButton;
     static gd::CustomSongWidget* songWidget;
+    // TODO: Free on exit
+    static gd::CCMenuItemSpriteExtra* ytDownloadButton;
+    static gd::CCMenuItemSpriteExtra* ytUseButton;
+    static cocos2d::CCSprite* ytUsed;
+    static cocos2d::CCMenu* songWidgetMenu;
 
     void callback(gd::CCMenuItemToggler* sender) {
         //gd::FLAlertLayer::create(nullptr, "Attempt Count", "OK", nullptr, !sender->isOn() ? "on" : "off")->show();
@@ -172,6 +188,21 @@ public:
             input->setMaxLabelLength(999);
             ytSearchButton->setVisible(false);
             ngSearchButton->setVisible(true);
+            if (ytDownloadButton) {
+                ytDownloadButton->removeFromParent();
+                delete ytDownloadButton;
+                ytDownloadButton = NULL;
+            }
+            if (ytUseButton) {
+                ytUseButton->removeFromParent();
+                delete ytUseButton;
+                ytUseButton = NULL;
+            }
+            if (ytUsed) {
+                ytUsed->removeFromParent();
+                delete ytUsed;
+                ytUsed = NULL;
+            }
         }
         else {
             input->setAllowedChars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
@@ -179,6 +210,23 @@ public:
             ytSearchButton->setVisible(true);
             ngSearchButton->setVisible(false);
         }
+
+        if (sender->isOn()) return;
+
+        std::string description;
+        macaron::Base64::Decode(level->m_sLevelDesc, description);
+
+        size_t begin = description.find('$');
+        size_t end = description.find('$', begin + 1);
+
+        if (begin == std::string::npos || end == std::string::npos) return;
+        if (level->m_nSongID != 42069) return;
+
+        std::string youtubeID = description.substr(begin + 1, end - begin - 1);
+
+        input->setString(youtubeID.c_str());
+        buttonCallback(ytSearchButton);
+        input->setString("");
     }   
 
     void buttonCallback(gd::CCMenuItemSpriteExtra* sender) {
@@ -218,37 +266,83 @@ public:
         info->m_bIsVerified = true;
         info->m_nSongPriority = -1;
 
+        level->m_nSongID = 42069;
         songWidget->updateSongObject(info);
 
+        if (!ytDownloadButton) {
+            cocos2d::CCObject* obj;
+
+            using namespace cocos2d;
+            CCARRAY_FOREACH(songWidget->getChildren(), obj) {
+                debugFile << reinterpret_cast<CCNode*>(obj)->getChildrenCount() << '\n';
+                if (reinterpret_cast<CCNode*>(obj)->getChildrenCount() != 6) continue;
+
+                songWidgetMenu = reinterpret_cast<CCMenu*>(obj);
+                break;
+            }
+
+            //MessageBox(NULL, L"dupa", L"chuj", MB_OK);
+
+            CCSprite* sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
+            ytDownloadButton = gd::CCMenuItemSpriteExtra::create(sprite, songWidget, menu_selector(SampleClass::downloadCallback));
+            ytDownloadButton->setPosition(-157, -180);
+            ytDownloadButton->setVisible(false);
+            ytDownloadButton->setZOrder(21);
+
+            CCSprite* sprite2 = CCSprite::createWithSpriteFrameName("GJ_selectSongBtn_001.png");
+            ytUseButton = gd::CCMenuItemSpriteExtra::create(sprite2, songWidget, menu_selector(SampleClass::useCallback));
+            ytUseButton->setPosition(-157, -180);
+            ytUseButton->setVisible(false);
+            ytUseButton->setZOrder(21);
+
+            ytUsed = CCSprite::createWithSpriteFrameName("GJ_selectSongOnBtn_001.png");
+            ytUsed->setPosition({ -157, -180 });
+            ytUsed->setVisible(false);
+            ytUsed->setZOrder(21);
+
+            //MessageBox(NULL, L"dupa", L"chuj", MB_OK);
+
+            songWidgetMenu->addChild(ytDownloadButton);
+            songWidgetMenu->addChild(ytUseButton);
+            songWidgetMenu->addChild(ytUsed);
+        }
+
         cocos2d::CCObject* obj;
-        cocos2d::CCMenu* menu = NULL;
 
-        using namespace cocos2d;
-        CCARRAY_FOREACH(songWidget->getChildren(), obj) {
-            debugFile << reinterpret_cast<CCNode*>(obj)->getChildrenCount() << '\n';
-            if (reinterpret_cast<CCNode*>(obj)->getChildrenCount() != 6) continue;
-
-            menu = reinterpret_cast<CCMenu*>(obj);
-            break;
+        CCARRAY_FOREACH(songWidgetMenu->getChildren(), obj) {
+            CCNode* node = reinterpret_cast<CCNode*>(obj);
+            if (node->getZOrder() != 21) node->setVisible(false);
         }
 
-        CCARRAY_FOREACH(menu->getChildren(), obj) {
-            reinterpret_cast<CCNode*>(obj)->setVisible(false);
+        bool currentlyUsed = false;
+
+        std::string description;
+        macaron::Base64::Decode(level->m_sLevelDesc, description);
+
+        size_t begin = description.find('$');
+        size_t end = description.find('$', begin + 1);
+
+        if (begin == std::string::npos || end == std::string::npos) currentlyUsed = false;
+        else {
+            std::string currentYTId = description.substr(begin + 1, end - begin - 1);
+            currentlyUsed = currentYTId == youtubeID;
         }
 
-        CCSprite* sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
-        gd::CCMenuItemSpriteExtra* downloadButton = gd::CCMenuItemSpriteExtra::create(sprite, songWidget, menu_selector(SampleClass::downloadCallback));
-        downloadButton->setPosition(-157, -180);
-
-        CCSprite* sprite2 = CCSprite::createWithSpriteFrameName("GJ_selectSongBtn_001.png");
-        gd::CCMenuItemSpriteExtra* useButton = gd::CCMenuItemSpriteExtra::create(sprite2, songWidget, menu_selector(SampleClass::useCallback));
-        useButton->setPosition(-157, -180);
-
-        if (std::filesystem::exists("gd-yt/downloads/" + youtubeID + ".mp3")) downloadButton->setVisible(false);
-        else useButton->setVisible(false);
-
-        menu->addChild(downloadButton);
-        menu->addChild(useButton);
+        if (std::filesystem::exists("gd-yt/downloads/" + youtubeID + ".mp3") && currentlyUsed) {
+            ytUsed->setVisible(true);
+            ytDownloadButton->setVisible(false);
+            ytUseButton->setVisible(false);
+        }
+        else if (std::filesystem::exists("gd-yt/downloads/" + youtubeID + ".mp3")) {
+            ytUseButton->setVisible(true);
+            ytDownloadButton->setVisible(false);
+            ytUsed->setVisible(false);
+        }
+        else {
+            ytDownloadButton->setVisible(true);
+            ytUseButton->setVisible(false);
+            ytUsed->setVisible(false);
+        }
     }
 
     void downloadCallback(gd::CCMenuItemSpriteExtra* button) {
@@ -256,10 +350,22 @@ public:
         std::string command = "gd-yt\\yt-dlp -x --audio-format mp3 " + songWidget->m_songInfo->m_sSongLink + " -o \"gd-yt/downloads/%(id)s.%(ext)s\"";
         std::string output;
         int ret = runCmd(command.c_str(), output);
+
+        ytDownloadButton->setVisible(false);
+        ytUseButton->setVisible(true);
     }
 
     void useCallback(gd::CCMenuItemSpriteExtra* button) {
         level->m_sLevelDesc = macaron::Base64::Encode("$" + songWidget->m_songInfo->m_sYouTubeChannelURL + "$");
+        ytUseButton->setVisible(false);
+        ytUsed->setVisible(true);
+        try {
+            std::filesystem::remove("Resources/42069.mp3");
+            std::filesystem::copy("gd-yt/downloads/" + songWidget->m_songInfo->m_sYouTubeChannelURL + ".mp3", "Resources/42069.mp3");
+        }
+        catch (std::exception e) {
+
+        }
     }
 };
 
@@ -268,6 +374,10 @@ gd::CCTextInputNode* SampleClass::input;
 gd::CCMenuItemSpriteExtra* SampleClass::ytSearchButton;
 gd::CCMenuItemSpriteExtra* SampleClass::ngSearchButton;
 gd::CustomSongWidget* SampleClass::songWidget;
+gd::CCMenuItemSpriteExtra* SampleClass::ytDownloadButton = NULL;
+gd::CCMenuItemSpriteExtra* SampleClass::ytUseButton = NULL;
+cocos2d::CCSprite* SampleClass::ytUsed = NULL;
+cocos2d::CCMenu* SampleClass::songWidgetMenu;
 
 bool __fastcall CustomSongLayer_Init(gd::CustomSongLayer* This, void*, gd::LevelSettingsObject* obj) {
     using namespace cocos2d;
@@ -312,6 +422,103 @@ bool __fastcall CustomSongLayer_Init(gd::CustomSongLayer* This, void*, gd::Level
 
     //This->m_songIDInput->setAllowedChars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
 
+    toggle->toggleWithCallback(true);
+
+    return true;
+}
+
+bool __fastcall EditLevelLayer_Init(gd::EditLevelLayer* This, void*, gd::GJGameLevel* level) {
+    if (!functionCopy5(This, 0, level)) return false;
+
+    std::string description;
+    macaron::Base64::Decode(level->m_sLevelDesc, description);
+
+    size_t begin = description.find('$');
+    size_t end = description.find('$', begin + 1);
+
+    if (begin == std::string::npos || end == std::string::npos) return true;
+    std::string youtubeID = description.substr(begin + 1, end - begin - 1);
+
+    //Catch the exception
+    //File is still open when returning to main menu
+    try {
+        std::filesystem::remove("Resources/42069.mp3");
+        std::filesystem::copy("gd-yt/downloads/" + youtubeID + ".mp3", "Resources/42069.mp3");
+    }
+    catch (std::exception e) {
+        // do nothing;
+    }
+
+    return true;
+}
+
+bool __fastcall LevelSettingsLayer_Init(gd::LevelSettingsLayer* This, void*, gd::LevelSettingsObject* obj, gd::LevelEditorLayer* lvlLayer) {
+    if (!functionCopy3(This, 0, obj, lvlLayer)) return false;
+
+    std::string description;
+    macaron::Base64::Decode(obj->m_pLevel->m_sLevelDesc, description);
+
+    size_t begin = description.find('$');
+    size_t end = description.find('$', begin + 1);
+
+    if (begin == std::string::npos || end == std::string::npos) return true;
+    if (obj->m_pLevel->m_nSongID != 42069) return true;
+
+    std::string youtubeID = description.substr(begin + 1, end - begin - 1);
+
+    if (!cache.contains(youtubeID)) {
+        // TODO: Sanitize input
+        std::string command = "gd-yt\\yt-dlp -J " + youtubeID + " --no-warnings";
+        std::string output;
+        // TODO: Move to another thread and handle errors
+        int result = runCmd(command.c_str(), output);
+
+        json outputJSON = json::parse(output);
+
+        cache[youtubeID] = {
+            { "id", youtubeID },
+            { "name", outputJSON["title"] },
+            { "artistID", outputJSON["uploader_id"] },
+            { "artist", outputJSON["uploader"] },
+            { "url", outputJSON["webpage_url"]}
+        };
+
+        cacheFile.open("gd-yt/cache.json", std::ios::out);
+        cacheFile << std::setw(4) << cache;
+        cacheFile.close();
+    }
+
+    // memory leak ?
+    gd::SongInfoObject* info = new gd::SongInfoObject;
+    info->m_nSongID = 42069;
+    info->m_sSongName = cache[youtubeID]["name"];
+    info->m_sArtistName = cache[youtubeID]["artist"];
+    info->m_sSongLink = cache[youtubeID]["url"];
+    info->m_sYouTubeChannelURL = youtubeID;
+    info->m_nArtistID = 42069;
+    info->m_fFileSize = 21.37;
+    info->m_bIsVerified = true;
+    info->m_nSongPriority = 42069;
+
+    cocos2d::CCLayer* layer = reinterpret_cast<CCLayer*>(This->getChildren()->objectAtIndex(0));
+
+    using namespace cocos2d;
+    CCObject* object;
+
+    gd::CustomSongWidget* widget = NULL;
+
+    CCARRAY_FOREACH(layer->getChildren(), object) {
+        CCNode* node = dynamic_cast<CCNode*>(object);
+        if (!node) continue;
+        if (node->getChildrenCount() != 7) continue;
+
+        widget = reinterpret_cast<gd::CustomSongWidget*>(object);
+    };
+
+    //MessageBox(NULL, L"chuj", L"dupa", MB_OK);
+
+    widget->updateSongObject(info);
+
     return true;
 }
 
@@ -328,6 +535,8 @@ DWORD WINAPI thread(void* hModule) {
 
     MH_CreateHook(reinterpret_cast<LPVOID*>(base + 0x5c6b0), &LevelCell_updateBGColor, reinterpret_cast<LPVOID*>(&functionCopy));
     MH_CreateHook(reinterpret_cast<LPVOID*>(base + 0x65c10), &CustomSongLayer_Init, reinterpret_cast<LPVOID*>(&functionCopy2));
+    MH_CreateHook(reinterpret_cast<LPVOID*>(base + 0x170e50), &LevelSettingsLayer_Init, reinterpret_cast<LPVOID*>(&functionCopy3));
+    MH_CreateHook(reinterpret_cast<LPVOID*>(base + 0x6f5d0), &EditLevelLayer_Init, reinterpret_cast<LPVOID*>(&functionCopy5));
 
     MH_EnableHook(MH_ALL_HOOKS);
 
