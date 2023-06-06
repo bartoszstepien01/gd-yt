@@ -29,7 +29,7 @@ Then download [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases/tag/2023.03.04)
 
 For this mod to work you'll need 'Change custom songs location' option turned on (to be fixed)
 
-Finally download DLL file from [here](https://github.com/bartoszstepien01/gd-yt/releases) and inject it using a DLL injector like [this](https://github.com/adafcaefc/ProxyDllLoader)
+Finally download DLL files from [here](https://github.com/bartoszstepien01/gd-yt/releases). Move 'minhook.x32.dll' to the GD root folder. Then inject 'gd-yt.dll' using a DLL injector like [this](https://github.com/adafcaefc/ProxyDllLoader)
     
 ## Usage
 

@@ -10,8 +10,6 @@
 #include "Callbacks.h"
 #include "MappedHook.h"
 
-std::ofstream debugFile;
-
 std::set<std::pair<int, int>> songNamePositions {
     {52, 33}, {98, 20}, {86, 20}, {74, 20}, {88, 20}, {103, 20},
 };
@@ -219,8 +217,6 @@ bool __fastcall LevelInfoLayer_Init(gd::LevelInfoLayer* This, void*, gd::GJGameL
 }
 
 DWORD WINAPI thread(void* hModule) {
-    debugFile.open("debug.txt");
-    
     youTube = YouTube::getInstance();
     youTube->loadCache("gd-yt/cache.json");
 

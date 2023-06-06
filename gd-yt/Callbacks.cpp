@@ -22,9 +22,6 @@ void Callbacks::toggleCallback(gd::CCMenuItemToggler* sender) {
         input->setMaxLabelLength(999);
         ytSearchButton->setVisible(false);
         ngSearchButton->setVisible(true);
-        /*if (ytDownloadButton) ytDownloadButton->setVisible(false);
-        if (ytUseButton) ytUseButton->setVisible(false);
-        if (ytUsed) ytUsed->setVisible(false);*/
         ytDownloadButton = NULL;
         ytUseButton = NULL;
         ytUsed = NULL;
