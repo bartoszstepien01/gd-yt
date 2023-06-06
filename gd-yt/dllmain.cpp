@@ -21,6 +21,8 @@ YouTube* youTube = NULL;
 void __fastcall LevelCell_updateBGColor(gd::LevelCell* This, void*, unsigned int index) {
     getOriginal(LevelCell_updateBGColor)(This, 0, index);
 
+    if (!This->m_pLevel) return;
+
     if (This->m_pLevel->m_nSongID != 42069) return;
 
     std::string youtubeID = getYoutubeIDFromDescription(This->m_pLevel->m_sLevelDesc);
@@ -139,6 +141,83 @@ bool __fastcall LevelSettingsLayer_Init(gd::LevelSettingsLayer* This, void*, gd:
     return true;
 }
 
+class LevelInfoLayerCallbacks {
+public:
+    static std::string youtubeID;
+    void callback(gd::CCMenuItemSpriteExtra* sender) {
+        youTube->downloadVideo(youtubeID);
+
+        std::filesystem::remove("Resources/42069.mp3");
+        std::filesystem::copy("gd-yt/downloads/" + youtubeID + ".mp3", "Resources/42069.mp3");
+
+        sender->setVisible(false);
+    }
+};
+
+std::string LevelInfoLayerCallbacks::youtubeID;
+
+bool __fastcall LevelInfoLayer_Init(gd::LevelInfoLayer* This, void*, gd::GJGameLevel* level) {
+    if (!getOriginal(LevelInfoLayer_Init)(This, 0, level)) return false;
+
+    std::string youtubeID = getYoutubeIDFromDescription(This->m_pLevel->m_sLevelDesc);
+    if (youtubeID == "" || This->m_pLevel->m_nSongID != 42069) return true;
+
+    YouTube::VideoData data = youTube->getData(youtubeID);
+    if (data.id == "") return true;
+
+    gd::SongInfoObject* info = videoDataToSongInfoObject(data);
+
+    using namespace cocos2d;
+    CCObject* obj;
+    gd::CustomSongWidget* widget = NULL;
+
+    CCARRAY_FOREACH(This->getChildren(), obj) {
+        CCNode* node = reinterpret_cast<CCNode*>(obj);
+
+        if ((int)node->getPositionX() == 284 && (int)node->getPositionY() == 45) {
+            widget = reinterpret_cast<gd::CustomSongWidget*>(obj);
+            break;
+        }
+    }
+
+    if (!widget) return true;
+
+    widget->updateSongObject(info);
+
+    widget->m_pDownloadBtn->setVisible(false);
+
+    LevelInfoLayerCallbacks::youtubeID = youtubeID;
+
+    CCSprite* sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
+    gd::CCMenuItemSpriteExtra* button = gd::CCMenuItemSpriteExtra::create(sprite, This, menu_selector(LevelInfoLayerCallbacks::callback));
+    button->setPosition(-157, -180);
+    widget->m_pDownloadBtn->getParent()->addChild(button);
+
+    widget->m_pDownloadBtn = button;
+
+    if (std::filesystem::exists("gd-yt/downloads/" + youtubeID + ".mp3")) {
+        button->setVisible(false);
+        try {
+            std::filesystem::remove("Resources/42069.mp3");
+            std::filesystem::copy("gd-yt/downloads/" + youtubeID + ".mp3", "Resources/42069.mp3");
+        }
+        catch (std::exception e) {
+            //do nothing;
+        }
+    }
+    else {
+        try {
+            std::filesystem::remove("Resources/42069.mp3");
+        }
+        catch (std::exception e) {
+
+        }
+        button->setVisible(true);
+    }  
+
+    return true;
+}
+
 DWORD WINAPI thread(void* hModule) {
     debugFile.open("debug.txt");
     
@@ -153,6 +232,7 @@ DWORD WINAPI thread(void* hModule) {
     registerHook(base + 0x65c10, CustomSongLayer_Init);
     registerHook(base + 0x170e50, LevelSettingsLayer_Init);
     registerHook(base + 0x6f5d0, EditLevelLayer_Init);
+    registerHook(base + 0x175df0, LevelInfoLayer_Init);
 
     MH_EnableHook(MH_ALL_HOOKS);
 

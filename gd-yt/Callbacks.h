@@ -13,6 +13,7 @@ public:
     static gd::CCMenuItemSpriteExtra* ytSearchButton;
     static gd::CCMenuItemSpriteExtra* ngSearchButton;
     static gd::CustomSongWidget* songWidget;
+    static gd::CustomSongWidget* levelSettingsSongWidget;
 
     void toggleCallback(gd::CCMenuItemToggler* sender);
     void buttonCallback(gd::CCMenuItemSpriteExtra* sender);

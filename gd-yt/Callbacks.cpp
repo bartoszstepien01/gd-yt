@@ -8,6 +8,7 @@ gd::CCTextInputNode* Callbacks::input;
 gd::CCMenuItemSpriteExtra* Callbacks::ytSearchButton;
 gd::CCMenuItemSpriteExtra* Callbacks::ngSearchButton;
 gd::CustomSongWidget* Callbacks::songWidget;
+gd::CustomSongWidget* Callbacks::levelSettingsSongWidget;
 gd::CCMenuItemSpriteExtra* Callbacks::ytDownloadButton = NULL;
 gd::CCMenuItemSpriteExtra* Callbacks::ytUseButton = NULL;
 cocos2d::CCSprite* Callbacks::ytUsed = NULL;
@@ -21,6 +22,9 @@ void Callbacks::toggleCallback(gd::CCMenuItemToggler* sender) {
         input->setMaxLabelLength(999);
         ytSearchButton->setVisible(false);
         ngSearchButton->setVisible(true);
+        /*if (ytDownloadButton) ytDownloadButton->setVisible(false);
+        if (ytUseButton) ytUseButton->setVisible(false);
+        if (ytUsed) ytUsed->setVisible(false);*/
         ytDownloadButton = NULL;
         ytUseButton = NULL;
         ytUsed = NULL;
@@ -54,6 +58,7 @@ void Callbacks::buttonCallback(gd::CCMenuItemSpriteExtra* sender) {
 
     level->m_nSongID = 42069;
     songWidget->updateSongObject(info);
+    if(levelSettingsSongWidget) levelSettingsSongWidget->updateSongObject(info);
 
     if (!ytDownloadButton) {
         cocos2d::CCObject* obj;
