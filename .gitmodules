@@ -4,3 +4,6 @@
 [submodule "include/json"]
 	path = include/json
 	url = https://github.com/nlohmann/json
+[submodule "include/minhook"]
+	path = include/minhook
+	url = https://github.com/TsudaKageyu/minhook
